@@ -17,12 +17,18 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # --- NAYA DATABASE CODE YAHAN HAI ---
+# --- DATABASE URL CONFIGURATION ---
 database_url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
 if database_url:
-    # SQLAlchemy ko 'postgres://' ki jagah 'postgresql://' chahiye hota hai
+    # Explicitly psycopg2 driver specify karein taake SQLAlchemy psycopg v3 na dhoonde
     if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
+# ----------------------------------
 # -------------------------------------
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
