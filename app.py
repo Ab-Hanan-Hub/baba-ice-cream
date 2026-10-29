@@ -620,18 +620,22 @@ def fast_setup():
     try:
         db.create_all()
         
-        # 1. Admin aur Cashier Account Guarantee Create Karein
+        # 1. Admin aur Cashier Accounts ka Role زبردستی ADMIN Set Karein
         admin = User.query.filter_by(username="admin").first()
         if not admin:
             admin = User(name="Baba Admin", username="admin", password_hash=generate_password_hash("Admin123!"), role="admin")
             db.session.add(admin)
         else:
+            admin.role = "admin"  # Force update role
             admin.password_hash = generate_password_hash("Admin123!")
             
         cashier = User.query.filter_by(username="cashier").first()
         if not cashier:
             cashier = User(name="Baba Cashier", username="cashier", password_hash=generate_password_hash("Cashier123!"), role="cashier")
             db.session.add(cashier)
+        else:
+            cashier.role = "cashier"  # Force update role
+            cashier.password_hash = generate_password_hash("Cashier123!")
             
         # 2. Categories Add Karein
         for cat_name in ["Ice Cream Flavours", "Ice Cream Shakes", "Family Pack", "Cold Coffee", "Cold Beverages", "Lemonade", "Hot Coffee", "Hot Tea", "Sodas"]:
@@ -639,7 +643,7 @@ def fast_setup():
                 db.session.add(Category(name=cat_name))
         db.session.commit()
 
-        # 3. Top 15 Products Add Karein
+        # 3. Top Products Add Karein
         menu = [
             ("Vanilla Ice Cream", "Vanilla", "Medium serving", 280, "Ice Cream Flavours"),
             ("Chocolate Ice Cream", "Chocolate", "Medium serving", 280, "Ice Cream Flavours"),
@@ -662,11 +666,11 @@ def fast_setup():
         for name, flavour, desc, price, cat_name in menu:
             cat = categories.get(cat_name)
             if cat and not Product.query.filter_by(name=name, category_id=cat.id).first():
-                db.session.add(Product(name=name, flavour=flavour, description=desc, price=price, stock=20, low_stock_threshold=5, category_id=cat.id, active=True, image_filename="ice-cream.jpg"))
+                db.session.add(Product(name=name, flavour=flavour, description=desc, price=price, stock=20, low_stock_threshold=5, category_id=cat.id, active=True, image_filename="https://www.thedailymeal.com/img/gallery/the-ultimate-ice-cream-brands-ranked/intro-1660338932.jpg"))
                 added += 1
 
         db.session.commit()
-        return f"Success! Admin Account Ban Gaya (Password: Admin123!) aur {added} Products Add Ho Gaye."
+        return f"Success! Admin Account Role set to ADMIN (Password: Admin123!) and {added} Products added successfully."
     except Exception as e:
         return f"Error: {str(e)}"
 
