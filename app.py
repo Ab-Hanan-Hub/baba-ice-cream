@@ -15,8 +15,23 @@ from models import db, User, Category, Product, Order, OrderItem, StockTransacti
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# --- NAYA DATABASE CODE YAHAN HAI ---
+database_url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+if database_url:
+    # SQLAlchemy ko 'postgres://' ki jagah 'postgresql://' chahiye hota hai
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+# -------------------------------------
+
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 db.init_app(app)
+
+# Vercel par automatically tables banane ke liye:
+with app.app_context():
+    db.create_all()
+
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -94,7 +109,6 @@ def chatbot_reply():
     if any(message == word or message.startswith(word + " ") for word in greetings):
         return jsonify({"reply": "Hello! Welcome to Baba Ice Cream 🍦. Ask me about flavours, categories, prices, or products within your budget."})
 
-    # Match the real category names in the database, with common customer aliases.
     aliases = {
         "ice cream": ("ice cream", "icecream", "ice-cream", "flavour", "flavors", "flavours"),
         "coffee": ("coffee", "cappuccino", "latte", "espresso"),
@@ -111,7 +125,6 @@ def chatbot_reply():
     for category in Category.query.order_by(Category.name).all():
         cname = category.name.lower()
         words = list(aliases.get(cname, (cname,)))
-        # Categories may be named "Ice Cream Flavours", "Cold Coffee", etc.
         for alias_key, alias_words in aliases.items():
             if alias_key in cname:
                 words.extend(alias_words)
@@ -127,7 +140,6 @@ def chatbot_reply():
         extra = f"\nAnd {len(matches) - 12} more item(s)." if len(matches) > 12 else ""
         return jsonify({"reply": f"Here are our {requested_category.name} options:\n" + "\n".join(lines) + extra})
 
-    # Optional budget requests, e.g. "under 200" or "budget 300".
     import re
     numbers = re.findall(r"\d+", message)
     if ("under" in message or "budget" in message or "within" in message) and numbers:
@@ -138,7 +150,6 @@ def chatbot_reply():
             return jsonify({"reply": f"Available options up to Rs. {budget:,}:\n" + "\n".join(lines)})
         return jsonify({"reply": f"Sorry, no in-stock products are priced at Rs. {budget:,} or less."})
 
-    # Match product name/flavour for specific item or price questions.
     words = [word for word in re.findall(r"[a-z0-9]+", message) if len(word) > 2 and word not in {"what", "which", "price", "cost", "show", "tell", "about", "have", "want", "like", "please", "recommend", "suggest", "much", "does", "for", "the", "and", "you", "your", "with", "can", "get", "give", "some", "item", "items"}]
     matches = [p for p in available if any(word in (p.name + " " + p.flavour + " " + (p.description or "")).lower() for word in words)]
     if matches:
@@ -152,7 +163,6 @@ def chatbot_reply():
 
     categories = [c.name for c in Category.query.order_by(Category.name).all()]
     return jsonify({"reply": "I can help with menu items, prices, and budget suggestions. Try asking about: " + ", ".join(categories) + ". You can also ask, for example, 'show coffee' or 'items under 200'."})
-
 
 @app.route("/product/<int:product_id>")
 def product_detail(product_id):
@@ -400,7 +410,6 @@ def update_order_status(order_id):
         return redirect(url_for("cashier_order", order_id=order.id))
     try:
         if new_status == "Completed" and not order.stock_deducted:
-            # Recheck stock and deduct exactly once at sale confirmation.
             for item in order.items:
                 product = db.session.get(Product, item.product_id)
                 if not product or product.stock < item.quantity:
@@ -497,7 +506,6 @@ def update_product(product_id):
         product.name, product.flavour, product.price = name, flavour, price
         product.stock, product.category_id = stock, category_id
         product.active = bool(request.form.get("active"))
-        # Only administrators can reach this route; allow them to replace a product photo.
         image = request.files.get("image")
         if image and image.filename:
             safe = secure_filename(image.filename)
@@ -608,7 +616,6 @@ def not_found(_):
 
 @app.cli.command("init-db")
 def init_db():
-    """Create tables, starter categories, and demo staff accounts."""
     db.create_all()
     for name in ["Cone", "Scoop", "Cup Ice Cream", "Sundae", "Ice Cream Bar", "Family Pack", "Ice Cream Flavours", "Ice Cream Shakes", "Cold Coffee", "Cold Beverages", "Lemonade", "Slush", "Hot Coffee", "Hot Tea", "Toppings", "Sodas"]:
         if not Category.query.filter_by(name=name).first():
@@ -620,15 +627,13 @@ def init_db():
         db.session.add(User(name="Baba Cashier", username="cashier",
                             password_hash=generate_password_hash("Cashier123!"), role="cashier"))
     db.session.commit()
-    print("Database initialized. Demo admin: admin / Admin123! ; cashier: cashier / Cashier123!")
+    print("Database initialized.")
 
 @app.cli.command("seed-products")
 def seed_products():
-    """Import the Baba Cafe menu from the supplied menu photos. Existing stock is preserved."""
     db.create_all()
     menu = []
 
-    # Ice-cream flavours and serving sizes (prices visible on the menu photo).
     for flavour in ["Pista Badam", "Kulfa Khoya", "Mango", "Vanilla", "Strawberry", "Chocolate",
                     "Kaju Akhrot", "Cheeko", "Date", "Caramel", "Sugar Free", "Pineapple",
                     "Chocolate Chip", "Blue Berry", "Tutti Frutti"]:
@@ -646,7 +651,6 @@ def seed_products():
     ]:
         menu.append((name, name, desc, price, "Toppings" if "Topping" in name else "Family Pack"))
 
-    # Shakes and cold coffee from the Baba Cafe menu.
     for flavour in ["Mango", "Banana", "Vanilla", "Strawberry", "Pista Badam", "Kulfa Khoya",
                     "Oreo", "Chocolate", "Cheeku", "Caramel", "KitKat", "Blue Berry"]:
         menu.append((f"{flavour} Shake", flavour, f"Baba Cafe {flavour.lower()} ice cream shake.", 420, "Ice Cream Shakes"))
@@ -655,8 +659,6 @@ def seed_products():
     for flavour in ["Vanilla", "Chocolate", "Caramel"]:
         menu.append((f"{flavour} Cold Coffee", flavour, f"Chilled {flavour.lower()} cold coffee.", 420, "Cold Coffee"))
 
-    # Cold beverages from the photographed menu. Where the photo does not show an individual price,
-    # the displayed section price is used as the starting price and can be edited by the admin.
     for name, price in [
         ("Berry Neval", 250), ("Strawberry Shake", 230), ("Mango Shake", 230),
         ("Banana Shake", 230), ("Ice Cream Shake", 230), ("Chocolate Shake", 230),
@@ -688,7 +690,6 @@ def seed_products():
     ]:
         menu.append((name, name, f"Freshly prepared {name.lower()}.", price, "Hot Tea"))
 
-    # Soda and fizzy drinks as a separate category, with editable starter prices.
     for name, price in [
         ("Cola Soda", 100), ("Lemon-Lime Soda", 100), ("Orange Soda", 100),
         ("Blueberry Soda", 150), ("Strawberry Soda", 150), ("Mint Soda", 150),
@@ -696,14 +697,12 @@ def seed_products():
     ]:
         menu.append((name, name.replace(" Soda", ""), f"Chilled {name.lower()}.", price, "Sodas"))
 
-    # Ensure categories exist first.
     for category_name in sorted({row[4] for row in menu}):
         if not Category.query.filter_by(name=category_name).first():
             db.session.add(Category(name=category_name))
     db.session.commit()
 
     added = updated = 0
-    # Real web-hosted product/category photos. Existing menu prices are not changed.
     image_by_category = {
         "Ice Cream Flavours": "https://www.thedailymeal.com/img/gallery/the-ultimate-ice-cream-brands-ranked/intro-1660338932.jpg",
         "Cone": "https://www.tourismeregionsoreltracy.com/_next/image?q=75&url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fhzynoggk%2Fproduction%2Fd936163a2de7eb7455f848e2b11228d0ef48e811-1310x1310.jpg&w=1920",
@@ -727,7 +726,6 @@ def seed_products():
         product = Product.query.filter_by(name=name, category_id=category.id).first()
         image_filename = image_by_category.get(category_name, "ice-cream.jpg")
         if product:
-            # Refresh menu details/prices and assign a local image without overwriting current stock.
             product.flavour = flavour
             product.description = desc
             product.price = price
@@ -743,8 +741,7 @@ def seed_products():
                                             reason="Opening stock from menu import"))
             added += 1
     db.session.commit()
-    print(f"Baba Cafe menu import complete: {added} products added, {updated} existing products updated.")
-    print("New products start with stock 20; adjust actual quantities in Admin > Stock.")
+    print(f"Baba Cafe menu import complete.")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
