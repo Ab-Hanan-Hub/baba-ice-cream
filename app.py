@@ -16,11 +16,9 @@ from models import db, User, Category, Product, Order, OrderItem, StockTransacti
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# --- NAYA DATABASE CODE YAHAN HAI ---
 # --- DATABASE URL CONFIGURATION ---
 database_url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
 if database_url:
-    # Explicitly psycopg2 driver specify karein taake SQLAlchemy psycopg v3 na dhoonde
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
     elif database_url.startswith("postgresql://"):
@@ -29,12 +27,10 @@ if database_url:
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
 # ----------------------------------
-# -------------------------------------
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 db.init_app(app)
 
-# Vercel par automatically tables banane ke liye:
 with app.app_context():
     db.create_all()
 
@@ -102,7 +98,6 @@ def products():
 @app.post("/chat")
 @csrf.exempt
 def chatbot_reply():
-    """Simple menu-aware chatbot using current product and category data."""
     payload = request.get_json(silent=True) or {}
     message = str(payload.get("message", "")).strip().lower()
     if not message:
@@ -126,7 +121,6 @@ def chatbot_reply():
         "family pack": ("family pack", "family packs", "take home pack"),
         "topping": ("topping", "toppings", "sprinkles"),
     }
-    category_words = {word for words in aliases.values() for word in words}
     requested_category = None
     for category in Category.query.order_by(Category.name).all():
         cname = category.name.lower()
@@ -747,7 +741,16 @@ def seed_products():
                                             reason="Opening stock from menu import"))
             added += 1
     db.session.commit()
-    print(f"Baba Cafe menu import complete.")
+    print("Baba Cafe menu import complete.")
+
+@app.route("/setup-my-database")
+def setup_my_database():
+    try:
+        init_db()
+        seed_products()
+        return "Database successfully initialized! Admin user, cashier, and products import ho gaye hain."
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
