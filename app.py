@@ -614,141 +614,59 @@ def forbidden(_):
 def not_found(_):
     return render_template("error.html", code=404, message="The requested page could not be found."), 404
 
-@app.cli.command("init-db")
-def init_db():
-    db.create_all()
-    for name in ["Cone", "Scoop", "Cup Ice Cream", "Sundae", "Ice Cream Bar", "Family Pack", "Ice Cream Flavours", "Ice Cream Shakes", "Cold Coffee", "Cold Beverages", "Lemonade", "Slush", "Hot Coffee", "Hot Tea", "Toppings", "Sodas"]:
-        if not Category.query.filter_by(name=name).first():
-            db.session.add(Category(name=name))
-    if not User.query.filter_by(username="admin").first():
-        db.session.add(User(name="Baba Admin", username="admin",
-                            password_hash=generate_password_hash("Admin123!"), role="admin"))
-    if not User.query.filter_by(username="cashier").first():
-        db.session.add(User(name="Baba Cashier", username="cashier",
-                            password_hash=generate_password_hash("Cashier123!"), role="cashier"))
-    db.session.commit()
-    print("Database initialized.")
 
-@app.cli.command("seed-products")
-def seed_products():
-    db.create_all()
-    menu = []
-
-    for flavour in ["Pista Badam", "Kulfa Khoya", "Mango", "Vanilla", "Strawberry", "Chocolate",
-                    "Kaju Akhrot", "Cheeko", "Date", "Caramel", "Sugar Free", "Pineapple",
-                    "Chocolate Chip", "Blue Berry", "Tutti Frutti"]:
-        for size, price in [("Small", 200), ("Medium", 280), ("Large", 400)]:
-            menu.append((f"{flavour} Ice Cream - {size}", flavour,
-                         f"{size} serving of {flavour} ice cream.", price, "Ice Cream Flavours"))
-    for name, price, desc in [
-        ("Half Liter Ice Cream Pack", 720, "Half-litre family ice cream pack."),
-        ("Three-Quarter Liter Ice Cream Pack", 1080, "Three-quarter-litre family ice cream pack."),
-        ("One Liter Ice Cream Pack", 1440, "One-litre family ice cream pack."),
-        ("Full Liter Special Ice Cream Pack", 1800, "Full-litre special family pack, as listed on the menu."),
-        ("Sprinkles Topping", 30, "Extra sprinkles topping."),
-        ("Nuts Topping", 30, "Extra nuts topping."),
-        ("Extra Jelly Topping", 30, "Extra jelly topping."),
-    ]:
-        menu.append((name, name, desc, price, "Toppings" if "Topping" in name else "Family Pack"))
-
-    for flavour in ["Mango", "Banana", "Vanilla", "Strawberry", "Pista Badam", "Kulfa Khoya",
-                    "Oreo", "Chocolate", "Cheeku", "Caramel", "KitKat", "Blue Berry"]:
-        menu.append((f"{flavour} Shake", flavour, f"Baba Cafe {flavour.lower()} ice cream shake.", 420, "Ice Cream Shakes"))
-    for flavour in ["Bounty", "Power", "Pineapple"]:
-        menu.append((f"{flavour} Shake", flavour, f"Baba Cafe {flavour.lower()} shake.", 450, "Ice Cream Shakes"))
-    for flavour in ["Vanilla", "Chocolate", "Caramel"]:
-        menu.append((f"{flavour} Cold Coffee", flavour, f"Chilled {flavour.lower()} cold coffee.", 420, "Cold Coffee"))
-
-    for name, price in [
-        ("Berry Neval", 250), ("Strawberry Shake", 230), ("Mango Shake", 230),
-        ("Banana Shake", 230), ("Ice Cream Shake", 230), ("Chocolate Shake", 230),
-        ("Oreo Shake", 230), ("Cold Coffee", 200), ("Mocca Cold Coffee", 230),
-        ("Fruit & Fiber", 220), ("Baba Special Blue Lagoon", 180), ("Pina Colada", 210),
-        ("Blue Colada", 210), ("Red Colada", 210), ("Fresh Lime", 100),
-        ("Pinacolada", 450), ("Blue Lagoon", 450), ("Mint Margarita", 330),
-    ]:
-        menu.append((name, name.replace(" Shake", ""), f"{name} from the Baba Cafe cold beverages menu.", price, "Cold Beverages"))
-    for flavour in ["Mango", "Bubblegum", "Peach", "Green Apple", "Orange", "Kiwi", "Rass Berry", "Strawberry", "Lichi"]:
-        menu.append((f"{flavour} Lemonade", flavour, f"Refreshing {flavour.lower()} lemonade.", 180, "Lemonade"))
-    menu.append(("Classic Lemonade", "Classic", "Classic fresh lemonade.", 180, "Lemonade"))
-    for flavour in ["Mango", "Bubblegum", "Peach", "Green Apple", "Orange", "Kiwi", "Rass Berry", "Strawberry", "Lichi"]:
-        menu.append((f"{flavour} Slush", flavour, f"Chilled {flavour.lower()} slush.", 100, "Slush"))
-    for name, price in [
-        ("Cappuccino", 200), ("Irish Cappuccino", 220), ("Vanilla Cappuccino", 220),
-        ("Hazelnut Cappuccino", 220), ("Caramel Cappuccino", 220), ("Chocolate Cappuccino", 220),
-        ("Latte Coffee", 220), ("Irish Latte", 240), ("Vanilla Latte", 240),
-        ("Hazelnut Latte", 240), ("Caramel Latte", 240), ("Chocolate Latte", 240),
-        ("Americano Coffee", 240), ("Espresso Single", 180), ("Black Coffee", 170),
-        ("Hot Chocolate", 170),
-    ]:
-        menu.append((name, name, f"Freshly prepared {name.lower()}.", price, "Hot Coffee"))
-    for name, price in [
-        ("Pink Tea", 150), ("SP Tea", 120), ("Irish Tea", 120), ("Coconut Tea", 120),
-        ("Cardamom Tea", 120), ("Mix Tea", 100), ("Black Tea", 100), ("Green Tea", 100),
-        ("Lemon Tea", 100), ("Peach Tea", 100), ("Doodh Patti", 160),
-        ("Cardamom Patti", 170), ("Kashmiri Chaye", 180),
-    ]:
-        menu.append((name, name, f"Freshly prepared {name.lower()}.", price, "Hot Tea"))
-
-    for name, price in [
-        ("Cola Soda", 100), ("Lemon-Lime Soda", 100), ("Orange Soda", 100),
-        ("Blueberry Soda", 150), ("Strawberry Soda", 150), ("Mint Soda", 150),
-        ("Baba Special Soda", 180),
-    ]:
-        menu.append((name, name.replace(" Soda", ""), f"Chilled {name.lower()}.", price, "Sodas"))
-
-    for category_name in sorted({row[4] for row in menu}):
-        if not Category.query.filter_by(name=category_name).first():
-            db.session.add(Category(name=category_name))
-    db.session.commit()
-
-    added = updated = 0
-    image_by_category = {
-        "Ice Cream Flavours": "https://www.thedailymeal.com/img/gallery/the-ultimate-ice-cream-brands-ranked/intro-1660338932.jpg",
-        "Cone": "https://www.tourismeregionsoreltracy.com/_next/image?q=75&url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fhzynoggk%2Fproduction%2Fd936163a2de7eb7455f848e2b11228d0ef48e811-1310x1310.jpg&w=1920",
-        "Scoop": "https://www.thedailymeal.com/img/gallery/the-ultimate-ice-cream-brands-ranked/intro-1660338932.jpg",
-        "Cup Ice Cream": "https://www.thedailymeal.com/img/gallery/the-ultimate-ice-cream-brands-ranked/intro-1660338932.jpg",
-        "Sundae": "https://www.tourismeregionsoreltracy.com/_next/image?q=75&url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fhzynoggk%2Fproduction%2Fd936163a2de7eb7455f848e2b11228d0ef48e811-1310x1310.jpg&w=1920",
-        "Ice Cream Bar": "https://www.thedailymeal.com/img/gallery/the-ultimate-ice-cream-brands-ranked/intro-1660338932.jpg",
-        "Ice Cream Shakes": "shake.jpg",
-        "Cold Coffee": "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/996c6973260883.5c0410f93fe97.jpg",
-        "Hot Coffee": "https://vstatic.vietnam.vn/vietnam/resource/IMAGE/2026/05/12/1778558197817_kingcoffee-com-vn-wp-content-uploads-2026-02-_cac-loai-thuc-uong-ca-phe.jpeg",
-        "Cold Beverages": "https://vstatic.vietnam.vn/vietnam/resource/IMAGE/2026/05/12/1778558197817_kingcoffee-com-vn-wp-content-uploads-2026-02-_cac-loai-thuc-uong-ca-phe.jpeg",
-        "Lemonade": "https://milex.co.za/cdn/shop/articles/Classic_Frozen_Lemonade_1024x.png?v=1757064284",
-        "Slush": "https://milex.co.za/cdn/shop/articles/Classic_Frozen_Lemonade_1024x.png?v=1757064284",
-        "Sodas": "cold-beverage.jpg",
-        "Hot Tea": "tea.jpg",
-        "Toppings": "https://snapcalorie-webflow-website.s3.us-east-2.amazonaws.com/media/food_pics_v2/medium/ice_cream_toppings.jpg",
-        "Family Pack": "https://digitalcontent.api.tesco.com/v2/media/ghs/2ebb0ab2-657d-40f5-91e0-4d31ce1b9e41/e1c05692-504d-4f93-91a2-698cd37b0290_1751870300.jpeg"
-    }
-    for name, flavour, desc, price, category_name in menu:
-        category = Category.query.filter_by(name=category_name).first()
-        product = Product.query.filter_by(name=name, category_id=category.id).first()
-        image_filename = image_by_category.get(category_name, "ice-cream.jpg")
-        if product:
-            product.flavour = flavour
-            product.description = desc
-            product.price = price
-            product.image_filename = image_filename
-            product.active = True
-            updated += 1
-        else:
-            product = Product(name=name, flavour=flavour, description=desc, price=price,
-                              image_filename=image_filename, stock=20, low_stock_threshold=5, category_id=category.id)
-            db.session.add(product)
-            db.session.flush()
-            db.session.add(StockTransaction(product_id=product.id, change_qty=20,
-                                            reason="Opening stock from menu import"))
-            added += 1
-    db.session.commit()
-    print("Baba Cafe menu import complete.")
-
-@app.route("/setup-my-database")
-def setup_my_database():
+@app.route("/fast-setup")
+def fast_setup():
     try:
-        init_db()
-        seed_products()
-        return "Database successfully initialized! Admin user, cashier, and products import ho gaye hain."
+        db.create_all()
+        
+        # 1. Admin aur Cashier Account Guarantee Create Karein
+        admin = User.query.filter_by(username="admin").first()
+        if not admin:
+            admin = User(name="Baba Admin", username="admin", password_hash=generate_password_hash("Admin123!"), role="admin")
+            db.session.add(admin)
+        else:
+            admin.password_hash = generate_password_hash("Admin123!")
+            
+        cashier = User.query.filter_by(username="cashier").first()
+        if not cashier:
+            cashier = User(name="Baba Cashier", username="cashier", password_hash=generate_password_hash("Cashier123!"), role="cashier")
+            db.session.add(cashier)
+            
+        # 2. Categories Add Karein
+        for cat_name in ["Ice Cream Flavours", "Ice Cream Shakes", "Family Pack", "Cold Coffee", "Cold Beverages", "Lemonade", "Hot Coffee", "Hot Tea", "Sodas"]:
+            if not Category.query.filter_by(name=cat_name).first():
+                db.session.add(Category(name=cat_name))
+        db.session.commit()
+
+        # 3. Top 15 Products Add Karein
+        menu = [
+            ("Vanilla Ice Cream", "Vanilla", "Medium serving", 280, "Ice Cream Flavours"),
+            ("Chocolate Ice Cream", "Chocolate", "Medium serving", 280, "Ice Cream Flavours"),
+            ("Kulfa Khoya Ice Cream", "Kulfa", "Medium serving", 280, "Ice Cream Flavours"),
+            ("Pista Badam Ice Cream", "Pista Badam", "Medium serving", 280, "Ice Cream Flavours"),
+            ("Mango Shake", "Mango", "Ice cream shake", 420, "Ice Cream Shakes"),
+            ("Chocolate Shake", "Chocolate", "Ice cream shake", 420, "Ice Cream Shakes"),
+            ("Oreo Shake", "Oreo", "Ice cream shake", 420, "Ice Cream Shakes"),
+            ("Half Liter Family Pack", "Half Liter", "Family pack", 720, "Family Pack"),
+            ("One Liter Family Pack", "One Liter", "Family pack", 1440, "Family Pack"),
+            ("Cold Coffee", "Coffee", "Chilled coffee", 200, "Cold Coffee"),
+            ("Mint Margarita", "Mint", "Refreshing", 330, "Cold Beverages"),
+            ("Classic Lemonade", "Classic", "Lemonade", 180, "Lemonade"),
+            ("Cappuccino", "Cappuccino", "Hot Coffee", 200, "Hot Coffee"),
+            ("Mix Tea", "Tea", "Hot Tea", 100, "Hot Tea"),
+            ("Baba Special Soda", "Soda", "Chilled Soda", 180, "Sodas")
+        ]
+        categories = {c.name: c for c in Category.query.all()}
+        added = 0
+        for name, flavour, desc, price, cat_name in menu:
+            cat = categories.get(cat_name)
+            if cat and not Product.query.filter_by(name=name, category_id=cat.id).first():
+                db.session.add(Product(name=name, flavour=flavour, description=desc, price=price, stock=20, low_stock_threshold=5, category_id=cat.id, active=True, image_filename="ice-cream.jpg"))
+                added += 1
+
+        db.session.commit()
+        return f"Success! Admin Account Ban Gaya (Password: Admin123!) aur {added} Products Add Ho Gaye."
     except Exception as e:
         return f"Error: {str(e)}"
 
