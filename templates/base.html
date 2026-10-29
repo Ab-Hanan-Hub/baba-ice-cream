@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Baba Ice Cream{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark brand-nav">
+  <div class="container">
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('home') }}"><img class="brand-logo" src="{{ url_for('static', filename='uploads/baba-logo.png') }}" alt="Baba Ice Cream logo"><span class="brand-name">Baba <span>Ice Cream</span><small>Freshness in every scoop</small></span></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('products') }}">Our Ice Cream</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('cart') }}">Cart</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('order_status') }}">Track Order</a></li>
+        {% if current_user.is_authenticated %}
+          {% if current_user.role == 'admin' %}<li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Admin</a></li>{% elif current_user.role == 'cashier' %}<li class="nav-item"><a class="nav-link" href="{{ url_for('cashier_dashboard') }}">Cashier</a></li>{% endif %}
+          <li class="nav-item"><a class="btn btn-sm btn-light ms-lg-2" href="{{ url_for('logout') }}">Logout</a></li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+          <li class="nav-item"><a class="btn btn-sm btn-light ms-lg-2" href="{{ url_for('register') }}">Sign up</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+<main class="container py-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }} alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}</div>{% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-footer"><div class="container d-flex flex-column flex-md-row justify-content-between gap-2"><span>🍦 <strong>Baba Ice Cream</strong> — a little happiness in every scoop.</span><span>© {{ current_year }} Baba Ice Cream</span></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<style>
+#baba-chat-launcher{position:fixed;right:22px;bottom:22px;z-index:1100;border:0;border-radius:999px;padding:13px 18px;background:#7b241c;color:#fff;font-weight:700;box-shadow:0 5px 18px #0003}
+#baba-chat-panel{position:fixed;right:22px;bottom:82px;z-index:1100;width: min(360px, calc(100vw - 28px));height:440px;background:#fff;border:1px solid #eadbd8;border-radius:16px;box-shadow:0 10px 35px #0003;display:flex;flex-direction:column;overflow:hidden}
+#baba-chat-panel[hidden]{display:none}
+.baba-chat-head{background:#7b241c;color:#fff;padding:13px 15px;display:flex;align-items:center;justify-content:space-between}
+.baba-chat-head button{background:transparent;color:#fff;border:0;font-size:22px;line-height:1}
+#baba-chat-log{flex:1;overflow-y:auto;padding:12px;background:#fffaf7}
+.baba-chat-msg{padding:9px 11px;border-radius:12px;margin:0 0 9px;max-width:94%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.baba-chat-msg.bot{background:#f4e8e3;color:#38201c;margin-right:auto}
+.baba-chat-msg.user{background:#7b241c;color:#fff;margin-left:auto}
+#baba-chat-form{display:flex;gap:7px;padding:10px;border-top:1px solid #eee}
+#baba-chat-input{min-width:0;flex:1;border:1px solid #ddd;border-radius:9px;padding:10px}
+#baba-chat-form button{border:0;border-radius:9px;background:#7b241c;color:#fff;padding:0 13px}
+.baba-chat-quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 9px;background:#fff}
+.baba-chat-quick button{border:1px solid #e3c7c1;background:#fff7f4;color:#7b241c;border-radius:999px;padding:5px 9px;font-size:12px}
+@media(max-width:480px){ #baba-chat-launcher{right:14px;bottom:14px}#baba-chat-panel{right:14px;bottom:72px;height: min(440px, calc(100vh - 100px))}}
+</style>
+<button id="baba-chat-launcher" type="button" aria-controls="baba-chat-panel" aria-expanded="false">💬 Chat with Baba</button>
+<section id="baba-chat-panel" aria-label="Baba Ice Cream chatbot" hidden>
+  <div class="baba-chat-head"><div class="d-flex align-items-center gap-2"><img class="chat-brand-logo" src="{{ url_for('static', filename='uploads/baba-brand-photo.jpg') }}" alt=""><div><strong>Baba Ice Cream Assistant</strong><div class="small">Menu, prices & recommendations</div></div></div><button id="baba-chat-close" type="button" aria-label="Close chat">×</button></div>
+  <div id="baba-chat-log" aria-live="polite"><div class="baba-chat-msg bot">Hi! 🍦 Ask me about ice cream, coffee, shakes, prices, or what you can get within your budget.</div></div>
+  <div class="baba-chat-quick"><button type="button" data-chat-prompt="Show ice cream">Ice Cream</button><button type="button" data-chat-prompt="Show coffee">Coffee</button><button type="button" data-chat-prompt="Show shakes">Shakes</button><button type="button" data-chat-prompt="Show items under 200">Under Rs. 200</button></div>
+  <form id="baba-chat-form"><input id="baba-chat-input" maxlength="300" autocomplete="off" placeholder="Ask about our menu..." aria-label="Chat message" required><button type="submit">Send</button></form>
+</section>
+<script>
+(() => {
+  const launcher = document.getElementById('baba-chat-launcher');
+  const panel = document.getElementById('baba-chat-panel');
+  const close = document.getElementById('baba-chat-close');
+  const form = document.getElementById('baba-chat-form');
+  const input = document.getElementById('baba-chat-input');
+  const log = document.getElementById('baba-chat-log');
+  if (!launcher || !panel || !form) return;
+  const openChat = () => { panel.hidden = false; launcher.setAttribute('aria-expanded','true'); input.focus(); };
+  const closeChat = () => { panel.hidden = true; launcher.setAttribute('aria-expanded','false'); };
+  launcher.addEventListener('click', () => panel.hidden ? openChat() : closeChat());
+  close.addEventListener('click', closeChat);
+  function addMessage(text, role) {
+    const bubble = document.createElement('div');
+    bubble.className = 'baba-chat-msg ' + role;
+    bubble.textContent = text;
+    log.appendChild(bubble);
+    log.scrollTop = log.scrollHeight;
+    return bubble;
+  }
+  async function sendMessage(text) {
+    const message = text.trim();
+    if (!message) return;
+    openChat(); addMessage(message, 'user'); input.value = '';
+    const waiting = addMessage('Checking the menu…', 'bot');
+    try {
+      const response = await fetch('{{ url_for("chatbot_reply") }}', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message})});
+      const data = await response.json();
+      waiting.textContent = data.reply || 'Sorry, I could not find an answer.';
+    } catch (error) {
+      waiting.textContent = 'Sorry, I could not connect. Please try again.';
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+  form.addEventListener('submit', event => { event.preventDefault(); sendMessage(input.value); });
+  document.querySelectorAll('[data-chat-prompt]').forEach(button => button.addEventListener('click', () => sendMessage(button.dataset.chatPrompt)));
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body></html>

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Baba Ice Cream | Home{% endblock %}
+{% block content %}
+<section class="hero row align-items-center g-4">
+  <div class="col-lg-7"><span class="eyebrow">SCOOPS OF HAPPINESS</span><h1>Make today a little <span>sweeter.</span></h1><p>Discover your favourite flavours, order in a few clicks, and let Baba Ice Cream brighten your day.</p><div class="d-flex flex-wrap gap-2"><a class="btn btn-brand btn-lg" href="{{ url_for('products') }}">Explore flavours</a><a class="btn btn-outline-success btn-lg" href="{{ url_for('order_status') }}">Track an order</a></div><div class="hero-tags mt-4"><span>🍓 Fresh flavours</span><span>🍦 Made for smiles</span><span>❤️ Loved locally</span></div></div>
+  <div class="col-lg-5"><div class="hero-art hero-photo-wrap"><div class="hero-photo-glow"></div><img class="hero-photo" src="{{ url_for('static', filename='uploads/baba-brand-photo.jpg') }}" alt="Baba Ice Cream cup topped with colourful ice cream and fruit"><div class="floating-chip chip-one">Fresh & creamy</div><div class="floating-chip chip-two">Pick your flavour!</div></div></div>
+</section>
+<div class="section-heading mt-5"><div><span class="eyebrow">THE CROWD FAVOURITES</span><h2>Sweet picks for you</h2></div><a href="{{ url_for('products') }}" class="text-success fw-bold">View all →</a></div>
+<div class="row g-4">{% for product in products %}<div class="col-6 col-lg-3"><div class="product-card h-100">
+  <a class="product-picture" href="{{ url_for('product_detail', product_id=product.id) }}">{% if product.image_filename %}<img src="{% if product.image_filename.startswith('http') %}{{ product.image_filename }}{% else %}{{ url_for('static', filename='uploads/' + product.image_filename) }}{% endif %}" alt="{{ product.name }}">{% else %}<span>{{ ['🍦','🍨','🍓','🍫'][loop.index0 % 4] }}</span>{% endif %}</a>
+  <div class="p-3"><div class="small text-muted">{{ product.category.name }} · {{ product.flavour }}</div><h3 class="product-name">{{ product.name }}</h3><div class="d-flex justify-content-between align-items-center"><strong class="price">{{ product.price|money }}</strong><span class="stock-dot {{ 'out' if product.stock < 1 else '' }}">{{ 'Out of stock' if product.stock < 1 else 'In stock' }}</span></div>
+  <form method="post" action="{{ url_for('cart_add', product_id=product.id) }}" class="mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="quantity" value="1"><button class="btn btn-brand w-100" {% if product.stock < 1 %}disabled{% endif %}>Add to cart +</button></form></div>
+</div></div>{% else %}<p>No products yet. Ask the admin to add products.</p>{% endfor %}</div>
+{% endblock %}
